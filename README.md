@@ -141,7 +141,7 @@ node-auth-api/
 ---
 
 ## Contact
-For any queries, reach out at **srtdk2312@gmail.com**.
+For any queries, reach out at **tidkeshubham10@gmail.com** OR **srtdk2312@gmail.com**.
 
 ---
 
