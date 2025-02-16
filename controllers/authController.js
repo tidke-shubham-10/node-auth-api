@@ -1,6 +1,6 @@
 const User = require('../models/User');
-const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const { generateToken } = require('../services/authService');
 
 dotenv.config();
 
@@ -17,21 +17,25 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    req.body.id = crypto.randomUUID();
+    if (!req.body.username) {
+      req.body.username = req.body.email;
+    }
+
     // Create new user
-    user = new User({ username, email, password });
+    user = new User(req.body);
     await user.save();
 
     // Generate JWT
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
+    const token = generateToken(user);
 
-    res.status(201).json({ token });
+    res.status(201).json(token);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
   }
 };
+
 
 // @desc    Login user
 // @route   POST /api/auth/login
@@ -53,11 +57,46 @@ exports.login = async (req, res) => {
     }
 
     // Generate JWT
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
+    const token = generateToken(user);
 
-    res.json({ token });
+    res.json(token);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  const { email, id } = req.body;
+
+  try {
+    // Find and delete user by ID or email
+    const user = await User.findOneAndDelete(email ? { email } : { id });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+
+exports.userExists = async (req, res) => {
+  const { email, id } = req.query;
+
+  try {
+    // Check if user exists by ID or email
+    const user = await User.findOne(email ? { email } : { id });
+    
+    if (!user) {
+      return res.status(404).json({ exists: false, message: 'User not found' });
+    }
+
+    res.status(200).json({ exists: true, message: 'User exists' });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
